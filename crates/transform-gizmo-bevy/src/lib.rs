@@ -507,8 +507,9 @@ fn update_gizmos(
                 continue;
             };
 
+            let target_transform_inv = target_transform.rotation.inverse();
             target_transform.translation += DVec3::from(result_transform.translation).as_vec3() - target_global_transform.translation;
-            target_transform.rotation = ( target_transform.rotation * ( DQuat::from(result_transform.rotation).as_quat() * target_global_transform.rotation.inverse() ) ) * target_transform.rotation;
+            target_transform.rotation *= ( DQuat::from(result_transform.rotation).as_quat() * target_global_transform.rotation.inverse() ) * target_transform_inv;
             target_transform.scale = DVec3::from(result_transform.scale).as_vec3();
         }
 
@@ -545,9 +546,9 @@ fn update_gizmos(
                     bevy_log::warn!("No transform {i} found in GizmoResult!");
                     continue;
                 };
-
+                let target_transform_inv = target_transform.rotation.inverse();
                 target_transform.translation += DVec3::from(result_transform.translation).as_vec3() - target_global_transform.translation;
-                target_transform.rotation = ( target_transform.rotation * ( DQuat::from(result_transform.rotation).as_quat() * target_global_transform.rotation.inverse() ) ) * target_transform.rotation;
+                target_transform.rotation *= ( DQuat::from(result_transform.rotation).as_quat() * target_global_transform.rotation.inverse() ) * target_transform_inv;
                 target_transform.scale = DVec3::from(result_transform.scale).as_vec3();
             }
 
