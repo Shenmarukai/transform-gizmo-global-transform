@@ -459,13 +459,12 @@ fn update_gizmos(
     };
 
     let mut target_entities: Vec<Entity> = vec![];
-    let mut target_transforms: Vec<Transform> = vec![];
-    let mut target_global_transforms: Vec<GlobalTransform> = vec![];
+    let mut target_transforms: Vec<(Transform, Transform)> = vec![];
 
     for (entity, mut target_transform, mut target_global_transform, mut gizmo_target) in &mut q_targets {
+        let target_global_transform = target_global_transform.compute_transform();
         target_entities.push(entity);
-        target_transforms.push(*target_transform);
-        target_global_transforms.push(*target_global_transform);
+        target_transforms.push((*target_transform, *target_global_transform));
 
         if gizmo_options.group_targets {
             gizmo_storage
@@ -491,9 +490,9 @@ fn update_gizmos(
         let gizmo_result = gizmo.update(
             gizmo_interaction,
             &[math::Transform {
-                translation: target_transform.translation.as_dvec3().into(),
-                rotation: target_transform.rotation.as_dquat().into(),
-                scale: target_transform.scale.as_dvec3().into(),
+                translation: target_global_transform.translation.as_dvec3().into(),
+                rotation: target_global_transform.rotation.as_dquat().into(),
+                scale: target_global_transform.scale.as_dvec3().into(),
             }],
         );
 
@@ -502,30 +501,18 @@ fn update_gizmos(
         gizmo_target.is_active = gizmo_result.is_some();
         gizmo_target.is_focused = is_focused;
 
-        if let Some((_, updated_targets)) = &gizmo_result {
+        if let Some((gizmo_result, updated_targets)) = &gizmo_result {
             let Some(result_transform) = updated_targets.first() else {
                 bevy_log::warn!("No transform found in GizmoResult!");
                 continue;
             };
 
-            target_transform.translation = DVec3::from(result_transform.translation).as_vec3();
-            target_transform.rotation = DQuat::from(result_transform.rotation).as_quat();
-            target_transform.scale = DVec3::from(result_transform.scale).as_vec3();
+            target_transform.translation = DVec3::from(result_transform.translation).as_vec3() - target_global_transform.translation;
+            target_transform.rotation = DQuat::from(result_transform.rotation).as_quat().inverse() * target_global_transform.rotation;
+            target_transform.scale = DVec3::from(result_transform.scale).as_vec3() - target_global_transform.scale;
         }
 
         gizmo_target.latest_result = gizmo_result.map(|(result, _)| result);
-
-        // NEW
-        let global_transform = target_global_transform.compute_transform();
-        gizmo.update(
-            gizmo_interaction,
-            &[math::Transform {
-                translation: global_transform.translation.as_dvec3().into(),
-                rotation: global_transform.rotation.as_dquat().into(),
-                scale: global_transform.scale.as_dvec3().into(),
-            }],
-        );
-        // NEW
     }
 
     if gizmo_options.group_targets {
@@ -537,9 +524,9 @@ fn update_gizmos(
             target_transforms
                 .iter()
                 .map(|transform| transform_gizmo::math::Transform {
-                    translation: transform.translation.as_dvec3().into(),
-                    rotation: transform.rotation.as_dquat().into(),
-                    scale: transform.scale.as_dvec3().into(),
+                    translation: transform.1.translation.as_dvec3().into(),
+                    rotation: transform.1.rotation.as_dquat().into(),
+                    scale: transform.1.scale.as_dvec3().into(),
                 })
                 .collect::<Vec<_>>()
                 .as_slice(),
@@ -547,7 +534,9 @@ fn update_gizmos(
 
         let is_focused = gizmo.is_focused();
 
-        for (i, (_, mut target_transform, _, mut gizmo_target)) in q_targets.iter_mut().enumerate() {
+        for (i, (_, mut target_transform, target_global_transform, mut gizmo_target)) in q_targets.iter_mut().enumerate() {
+            let target_global_transform = target_global_transform.compute_transform();
+
             gizmo_target.is_active = gizmo_result.is_some();
             gizmo_target.is_focused = is_focused;
 
@@ -557,29 +546,13 @@ fn update_gizmos(
                     continue;
                 };
 
-                target_transform.translation = DVec3::from(result_transform.translation).as_vec3();
-                target_transform.rotation = DQuat::from(result_transform.rotation).as_quat();
-                target_transform.scale = DVec3::from(result_transform.scale).as_vec3();
+                target_transform.translation = DVec3::from(result_transform.translation).as_vec3() - target_global_transform.translation;
+                target_transform.rotation = DQuat::from(result_transform.rotation).as_quat().inverse() * target_global_transform.rotation;
+                target_transform.scale = DVec3::from(result_transform.scale).as_vec3() - target_global_transform.scale;
             }
 
             gizmo_target.latest_result = gizmo_result.as_ref().map(|(result, _)| *result);
         }
-
-        // NEW
-        
-        gizmo.update(
-            gizmo_interaction,
-            target_global_transforms
-                .iter()
-                .map(|transform| transform_gizmo::math::Transform {
-                    translation: transform.compute_transform().translation.as_dvec3().into(),
-                    rotation: transform.compute_transform().rotation.as_dquat().into(),
-                    scale: transform.compute_transform().scale.as_dvec3().into(),
-                })
-                .collect::<Vec<_>>()
-                .as_slice(),
-        );
-        // NEW
     }
 
     gizmo_storage.target_entities = target_entities;
