@@ -491,7 +491,7 @@ fn update_gizmos(
             gizmo_interaction,
             &[math::Transform {
                 translation: target_global_transform.translation.as_dvec3().into(),
-                rotation: target_global_transform.rotation.as_dquat().into(),
+                rotation: target_transform.rotation.as_dquat().into(),
                 scale: target_global_transform.scale.as_dvec3().into(),
             }],
         );
