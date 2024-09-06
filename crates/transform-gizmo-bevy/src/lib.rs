@@ -364,7 +364,7 @@ fn handle_hotkeys(
 fn update_gizmos(
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_gizmo_camera: Query<(&Camera, &GlobalTransform), With<GizmoCamera>>,
-    mut q_targets: Query<(Entity, &mut GlobalTransform, &mut GizmoTarget), Without<GizmoCamera>>,
+    mut q_targets: Query<(Entity, &mut Transform, &mut GlobalTransform, &mut GizmoTarget), Without<GizmoCamera>>,
     mouse: Res<ButtonInput<MouseButton>>,
     gizmo_options: Res<GizmoOptions>,
     mut gizmo_storage: ResMut<GizmoStorage>,
@@ -461,10 +461,10 @@ fn update_gizmos(
     let mut target_entities: Vec<Entity> = vec![];
     let mut target_transforms: Vec<Transform> = vec![];
 
-    for (entity, mut target_global_transform, mut gizmo_target) in &mut q_targets {
-        let mut target_transform = (*target_global_transform).compute_transform();
+    for (entity, mut target_transform, target_global_transform, mut gizmo_target) in &mut q_targets {
+        let target_global_transform = (*target_global_transform).compute_transform();
         target_entities.push(entity);
-        target_transforms.push(target_transform);
+        target_transforms.push(target_global_transform);
 
         if gizmo_options.group_targets {
             gizmo_storage
@@ -490,9 +490,9 @@ fn update_gizmos(
         let gizmo_result = gizmo.update(
             gizmo_interaction,
             &[math::Transform {
-                translation: target_transform.translation.as_dvec3().into(),
-                rotation: target_transform.rotation.as_dquat().into(),
-                scale: target_transform.scale.as_dvec3().into(),
+                translation: target_global_transform.translation.as_dvec3().into(),
+                rotation: target_global_transform.rotation.as_dquat().into(),
+                scale: target_global_transform.scale.as_dvec3().into(),
             }],
         );
 
@@ -534,9 +534,7 @@ fn update_gizmos(
 
         let is_focused = gizmo.is_focused();
 
-        for (i, (_, mut target_global_transform, mut gizmo_target)) in q_targets.iter_mut().enumerate() {
-            let mut target_transform = (*target_global_transform).compute_transform();
-
+        for (i, (_, mut target_transform, _, mut gizmo_target)) in q_targets.iter_mut().enumerate() {
             gizmo_target.is_active = gizmo_result.is_some();
             gizmo_target.is_focused = is_focused;
 
