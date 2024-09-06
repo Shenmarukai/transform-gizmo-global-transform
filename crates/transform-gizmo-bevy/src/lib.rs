@@ -534,7 +534,9 @@ fn update_gizmos(
 
         let is_focused = gizmo.is_focused();
 
-        for (i, (_, mut target_transform, mut gizmo_target)) in q_targets.iter_mut().enumerate() {
+        for (i, (_, mut target_global_transform, mut gizmo_target)) in q_targets.iter_mut().enumerate() {
+            let target_transform = (*target_global_transform).compute_transform();
+
             gizmo_target.is_active = gizmo_result.is_some();
             gizmo_target.is_focused = is_focused;
 
