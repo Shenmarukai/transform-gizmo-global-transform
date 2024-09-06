@@ -508,7 +508,7 @@ fn update_gizmos(
             };
 
             target_transform.translation += DVec3::from(result_transform.translation).as_vec3() - target_global_transform.translation;
-            target_transform.rotation = ( DQuat::from(result_transform.rotation).as_quat().inverse() * target_global_transform.rotation ) * target_transform.rotation;
+            target_transform.rotation *= DQuat::from(result_transform.rotation).as_quat() * target_global_transform.rotation.inverse();
             target_transform.scale = DVec3::from(result_transform.scale).as_vec3();
         }
 
@@ -547,7 +547,7 @@ fn update_gizmos(
                 };
 
                 target_transform.translation += DVec3::from(result_transform.translation).as_vec3() - target_global_transform.translation;
-                target_transform.rotation = ( DQuat::from(result_transform.rotation).as_quat().inverse() * target_global_transform.rotation ) * target_transform.rotation;
+                target_transform.rotation *= DQuat::from(result_transform.rotation).as_quat() * target_global_transform.rotation.inverse();
                 target_transform.scale = DVec3::from(result_transform.scale).as_vec3();
             }
 
